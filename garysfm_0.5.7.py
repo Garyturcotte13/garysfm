@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Gary's File Manager (garysfm) - Cross-platform Edition
-Version: 0.5.4 - Enhanced macOS Compatibility
+Version: 0.5.7 - Enhanced macOS Compatibility
 
 A cross-platform file manager built with PyQt5, supporting Windows, macOS, and Linux.
 This version includes significant macOS compatibility improvements while maintaining
@@ -8478,7 +8478,7 @@ class SimpleFileManager(QMainWindow):
 
     def show_about_dialog(self):
         """Show the about dialog"""
-        about_text = "Gary's File Manager\nVersion 0.5.3\n2025\n\n"
+        about_text = "Gary's File Manager\nVersion 0.5.7\n2025\n\n"
         about_text += "🚀 CORE FEATURES:\n"
         about_text += "• Multiple view modes (Icon, List, Detail)\n"
         about_text += "• Advanced file operations with progress tracking\n"
@@ -9430,7 +9430,7 @@ class AdvancedOperationsDialog(QDialog):
 
     def show_about_dialog(self):
         """Show the about dialog"""
-        about_text = "Gary's File Manager\nVersion 0.5.3\n2025\n\n"
+        about_text = "Gary's File Manager\nVersion 0.5.7\n2025\n\n"
         about_text += "🚀 CORE FEATURES:\n"
         about_text += "• Multiple view modes (Icon, List, Detail)\n"
         about_text += "• Advanced file operations with progress tracking\n"
@@ -9658,7 +9658,7 @@ def main():
     
     # Set application properties for better cross-platform integration
     app.setApplicationName("garysfm")
-    app.setApplicationVersion("0.5.4")
+    app.setApplicationVersion("0.5.7")
     app.setApplicationDisplayName("Gary's File Manager")
     app.setOrganizationName("turkokards")
     app.setOrganizationDomain("turkokards.com")
