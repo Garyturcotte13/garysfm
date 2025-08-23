@@ -383,7 +383,12 @@ import os
 import uuid
 import sys
 if sys.platform.startswith('linux'):
-    from smb.SMBConnection import SMBConnection
+    try:
+        from smb.SMBConnection import SMBConnection
+        HAVE_PYSMB = True
+    except ImportError:
+        HAVE_PYSMB = False
+        import subprocess
 else:
     import smbprotocol
     from smbprotocol.connection import Connection
@@ -409,14 +414,21 @@ class SMBNetworkUtils:
         self.tree = None
         self.smbc = None
         if sys.platform.startswith('linux'):
-            self._connect_linux()
+            if HAVE_PYSMB:
+                self._connect_linux_pysmb()
+            else:
+                self._connect_linux_smbclient()
         else:
             self._connect_win()
 
-    def _connect_linux(self):
+    def _connect_linux_pysmb(self):
         # Use pysmb's SMBConnection
         self.smbc = SMBConnection(self.username, self.password, 'garysfm', self.server, domain=self.domain, use_ntlm_v2=True)
         assert self.smbc.connect(self.server, self.port), "Failed to connect to SMB server via pysmb"
+
+    def _connect_linux_smbclient(self):
+        # No persistent connection needed for smbclient subprocess
+        self.smbc = None
 
     def _connect_win(self):
         smbprotocol.ClientConfig(username=self.username, password=self.password, domain=self.domain)
@@ -430,10 +442,29 @@ class SMBNetworkUtils:
     def listdir(self, path):
         """List files and folders in a directory on the SMB share."""
         if sys.platform.startswith('linux'):
-            # Remove leading slash for pysmb
             path = path.lstrip('/')
-            files = self.smbc.listPath(self.share, path)
-            return [f.filename for f in files if f.filename not in ('.', '..')]
+            if HAVE_PYSMB:
+                files = self.smbc.listPath(self.share, path)
+                return [f.filename for f in files if f.filename not in ('.', '..')]
+            else:
+                # Use smbclient subprocess
+                cmd = [
+                    'smbclient',
+                    f'//{self.server}/{self.share}',
+                    f'-U', f'{self.username}%{self.password}',
+                    '-c', f'ls {path or "."}'
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    raise RuntimeError(f'smbclient failed: {result.stderr}')
+                lines = result.stdout.splitlines()
+                # Parse output: skip lines that are not file/dir entries
+                entries = []
+                for line in lines:
+                    parts = line.split()
+                    if parts and not line.startswith('Domain=') and not line.startswith('smb:'):
+                        entries.append(parts[0])
+                return [e for e in entries if e not in ('.', '..')]
         else:
             dir_handle = Open(tree=self.tree, file_name=path, desired_access=FilePipePrinterAccessMask.FILE_LIST_DIRECTORY,
                              share_access=1, create_disposition=CreateDisposition.FILE_OPEN, create_options=CreateOptions.FILE_DIRECTORY_FILE)
@@ -446,10 +477,29 @@ class SMBNetworkUtils:
         """Read the contents of a file from the SMB share."""
         if sys.platform.startswith('linux'):
             path = path.lstrip('/')
-            from io import BytesIO
-            file_obj = BytesIO()
-            self.smbc.retrieveFile(self.share, path, file_obj)
-            return file_obj.getvalue()
+            if HAVE_PYSMB:
+                from io import BytesIO
+                file_obj = BytesIO()
+                self.smbc.retrieveFile(self.share, path, file_obj)
+                return file_obj.getvalue()
+            else:
+                # Use smbclient subprocess to get file
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    tmp_path = tmp.name
+                cmd = [
+                    'smbclient',
+                    f'//{self.server}/{self.share}',
+                    f'-U', f'{self.username}%{self.password}',
+                    '-c', f'get {path} {tmp_path}'
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    raise RuntimeError(f'smbclient get failed: {result.stderr}')
+                with open(tmp_path, 'rb') as f:
+                    data = f.read()
+                os.remove(tmp_path)
+                return data
         else:
             file_handle = Open(tree=self.tree, file_name=path, desired_access=FilePipePrinterAccessMask.FILE_READ_DATA,
                               share_access=1, create_disposition=CreateDisposition.FILE_OPEN)
@@ -462,9 +512,26 @@ class SMBNetworkUtils:
         """Write data to a file on the SMB share (overwrites if exists)."""
         if sys.platform.startswith('linux'):
             path = path.lstrip('/')
-            from io import BytesIO
-            file_obj = BytesIO(data)
-            self.smbc.storeFile(self.share, path, file_obj)
+            if HAVE_PYSMB:
+                from io import BytesIO
+                file_obj = BytesIO(data)
+                self.smbc.storeFile(self.share, path, file_obj)
+            else:
+                # Use smbclient subprocess to put file
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    tmp.write(data)
+                    tmp_path = tmp.name
+                cmd = [
+                    'smbclient',
+                    f'//{self.server}/{self.share}',
+                    f'-U', f'{self.username}%{self.password}',
+                    '-c', f'put {tmp_path} {path}'
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                os.remove(tmp_path)
+                if result.returncode != 0:
+                    raise RuntimeError(f'smbclient put failed: {result.stderr}')
         else:
             file_handle = Open(tree=self.tree, file_name=path, desired_access=FilePipePrinterAccessMask.FILE_WRITE_DATA,
                               share_access=1, create_disposition=CreateDisposition.FILE_OVERWRITE_IF)
@@ -486,7 +553,7 @@ class SMBNetworkUtils:
 
     def close(self):
         if sys.platform.startswith('linux'):
-            if self.smbc:
+            if HAVE_PYSMB and self.smbc:
                 self.smbc.close()
         else:
             if self.tree:
