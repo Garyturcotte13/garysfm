@@ -1777,11 +1777,28 @@ Gary's File Manager (garysfm) - Cross-platform Edition
 
 
 
-Version: 1.2.5 - Added KDE Breeze theme collection and optimized UI layout spacing
+Version: 1.2.7 - Fixed macOS thumbnail caching and enhanced cross-platform compatibility
 
 A cross-platform file manager built with PyQt5, supporting Windows, macOS, and Linux.
 
 
+
+WHAT'S NEW IN 1.2.7 (September 2025):
+- Fixed: macOS thumbnail caching to disk now works properly with directory-based file detection
+- Fixed: Video thumbnail caching on macOS - generated thumbnails now persist correctly
+- Fixed: macOS path normalization issues with cache key generation using realpath/abspath/normcase
+- Enhanced: ThumbnailCache class with macOS-specific optimizations for file system compatibility
+- Improved: Cache staleness detection for video files on macOS to prevent unnecessary regeneration
+- Fixed: Audio waveform thumbnail caching on macOS using directory listing instead of os.path.exists()
+
+WHAT'S NEW IN 1.2.6 (September 2025):
+- New: KDE Breeze theme collection with 4 professional variants (Classic, Dark, Light, Twilight)
+- New: Breeze themes feature signature blue accents (#3daee9) and authentic KDE design language
+- Improved: My Computer button repositioned next to tabs for better navigation flow
+- Improved: Optimized UI layout spacing - reduced gaps between navigation buttons and tabs
+- Improved: Removed duplicate My Computer buttons from various locations for cleaner interface
+- Fixed: Layout spacing issues that caused excessive whitespace in tab areas
+- Enhanced: More compact and efficient interface design throughout the application
 
 WHAT'S NEW IN 1.2.5 (September 2025):
 - New: KDE Breeze theme collection with 4 professional variants (Classic, Dark, Light, Twilight)
@@ -19928,7 +19945,7 @@ class SimpleFileManager(QMainWindow):
                 "theme_info": {
                     "name": theme_name,
                     "mode": mode,
-                    "version": "1.2.5"
+                    "version": "1.2.7"
                 },
                 "theme_data": theme_colors
             }
@@ -19970,7 +19987,7 @@ class SimpleFileManager(QMainWindow):
                 "theme_info": {
                     "name": theme_name,
                     "mode": theme_mode,
-                    "version": "1.2.5"
+                    "version": "1.2.7"
                 },
                 "theme_data": theme_colors
             }
@@ -21411,10 +21428,18 @@ QScrollBar::handle:horizontal {{
         # Build about text
         about_lines = [
             "Gary's File Manager",
-            "Version 1.2.5 - Added KDE Breeze theme collection and optimized UI layout spacing",
+            "Version 1.2.7 - Fixed macOS thumbnail caching and enhanced cross-platform compatibility",
             "Release: September 2025",
             "",
-            "What's New in 1.2.5:",
+            "What's New in 1.2.7:",
+            "• Fixed macOS thumbnail caching to disk with directory-based file detection",
+            "• Fixed video thumbnail caching on macOS - generated thumbnails now persist correctly",
+            "• Fixed macOS path normalization issues with cache key generation using realpath/abspath/normcase",
+            "• Enhanced ThumbnailCache class with macOS-specific optimizations for file system compatibility",
+            "• Improved cache staleness detection for video files on macOS to prevent unnecessary regeneration",
+            "• Fixed audio waveform thumbnail caching on macOS using directory listing instead of os.path.exists()",
+            "",
+            "What's New in 1.2.6:",
             "• New KDE Breeze theme collection with 4 professional variants (Classic, Dark, Light, Twilight)",
             "• Authentic KDE design language with signature blue accents (#3daee9) and 4px border radius",
             "• My Computer button repositioned next to tabs for improved navigation workflow",
@@ -21423,7 +21448,7 @@ QScrollBar::handle:horizontal {{
             "• Removed duplicate My Computer buttons for cleaner, more organized interface",
             "• Enhanced tab area layout with minimal spacing and professional appearance",
             "",
-            "Previous Updates (1.2.4):",
+            "Previous Updates (1.2.5):",",
             "• Revolutionary QSS stylesheet system with comprehensive OS theme collection",
             "• Professional QSS themes: Windows 11 (Light/Dark), macOS Sequoia (Light/Dark), Ubuntu (Light/Dark)",
             "• Additional QSS themes: Linux Mint variants, Kali Linux hacker aesthetic",
@@ -22282,7 +22307,7 @@ def main():
         
         # Set application metadata
         app.setApplicationName("Gary's File Manager")
-        app.setApplicationVersion("1.2.5")
+        app.setApplicationVersion("1.2.7")
         app.setOrganizationName("Gary's Software")
 
         # All widget creation must be after QApplication
